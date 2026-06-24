@@ -82,7 +82,7 @@ end
 
 function MinesweeperScreen:buildLayout()
     local sw           = DeviceScreen:getWidth()
-    local sh           = DeviceScreen:getHeight()
+    local sh = DeviceScreen:getHeight()
     local is_landscape = self:isLandscape()
 
     -- Top bar

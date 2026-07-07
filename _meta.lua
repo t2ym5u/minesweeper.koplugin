@@ -4,5 +4,5 @@ return {
     name        = "minesweeper",
     fullname    = _("Minesweeper"),
     description = _("Classic mine-sweeping game. Reveal all safe cells without triggering a mine."),
-    version     = "1.0.0",
+    version     = "1.0.1",
 }

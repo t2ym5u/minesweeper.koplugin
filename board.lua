@@ -1,5 +1,14 @@
-local grid_utils = require("grid_utils")
-local Timer      = require("timer")
+local _dir = debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "./"
+local function lrequire(name)
+    local key = _dir .. name
+    if not package.loaded[key] then
+        package.loaded[key] = assert(loadfile(_dir .. name .. ".lua"))()
+    end
+    return package.loaded[key]
+end
+
+local grid_utils = lrequire("common/grid_utils")
+local Timer      = lrequire("common/timer")
 
 local emptyGrid     = grid_utils.emptyGrid
 local emptyBoolGrid = grid_utils.emptyBoolGrid

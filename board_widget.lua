@@ -1,15 +1,25 @@
-local Blitbuffer   = require("ffi/blitbuffer")
-local Device       = require("device")
-local Font         = require("ui/font")
-local Geom         = require("ui/geometry")
-local InputContainer = require("ui/widget/container/inputcontainer")
-local RenderText   = require("ui/rendertext")
-local Size         = require("ui/size")
+local _dir = debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "./"
+local function lrequire(name)
+    local key = _dir .. name
+    if not package.loaded[key] then
+        package.loaded[key] = assert(loadfile(_dir .. name .. ".lua"))()
+    end
+    return package.loaded[key]
+end
 
-local gwb      = require("grid_widget_base")
+local Blitbuffer     = require("ffi/blitbuffer")
+local Device         = require("device")
+local Font           = require("ui/font")
+local Geom           = require("ui/geometry")
+local GestureRange   = require("ui/gesturerange")
+local InputContainer = require("ui/widget/container/inputcontainer")
+local RenderText     = require("ui/rendertext")
+local Size           = require("ui/size")
+
+local gwb      = lrequire("common/grid_widget_base")
 local drawLine = gwb.drawLine
 
-local MinesweeperBoard = require("board")
+local MinesweeperBoard = lrequire("board")
 
 local STATE_HIDDEN   = MinesweeperBoard.STATE_HIDDEN
 local STATE_REVEALED = MinesweeperBoard.STATE_REVEALED
@@ -78,20 +88,20 @@ end
 
 function MinesweeperBoardWidget:_registerGestures()
     self.ges_events = {
-        CellTap  = { GestureRange:new{ ges = "tap",          range = self.dimen } },
-        CellHold = { GestureRange:new{ ges = "hold_release", range = self.dimen } },
+        CellTap  = { GestureRange:new{ ges = "tap",          range = function() return self.paint_rect end } },
+        CellHold = { GestureRange:new{ ges = "hold_release", range = function() return self.paint_rect end } },
     }
 end
 
-function MinesweeperBoardWidget:onCellTap(ges)
-    if not self.paint_rect then return end
+function MinesweeperBoardWidget:onCellTap(_, ges)
+    if not (ges and ges.pos) then return end
     local r, c = self:_cellAt(ges.pos.x, ges.pos.y)
     if r and self.cellTapCallback then self.cellTapCallback(r, c) end
     return true
 end
 
-function MinesweeperBoardWidget:onCellHold(ges)
-    if not self.paint_rect then return end
+function MinesweeperBoardWidget:onCellHold(_, ges)
+    if not (ges and ges.pos) then return end
     local r, c = self:_cellAt(ges.pos.x, ges.pos.y)
     if r and self.cellHoldCallback then self.cellHoldCallback(r, c) end
     return true

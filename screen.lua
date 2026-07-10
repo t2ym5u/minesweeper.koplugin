@@ -129,8 +129,8 @@ function MinesweeperScreen:buildLayout()
         board      = self.board,
         max_width  = board_max_w,
         max_height = board_max_h,
-        onCellTap  = function(r, c) self:onCellTap(r, c) end,
-        onCellHold = function(r, c) self:onCellHold(r, c) end,
+        cellTapCallback  = function(r, c) self:onCellTap(r, c) end,
+        cellHoldCallback = function(r, c) self:onCellHold(r, c) end,
     }
 
     local board_frame = FrameContainer:new{

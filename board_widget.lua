@@ -46,8 +46,8 @@ local DIGIT_COLORS = {
 
 local MinesweeperBoardWidget = InputContainer:extend{
     board        = nil,
-    onCellTap    = nil,   -- function(r, c)
-    onCellHold   = nil,   -- function(r, c)
+    cellTapCallback  = nil,
+    cellHoldCallback = nil,
     max_width    = 0,
     max_height   = 0,
 }
@@ -86,14 +86,14 @@ end
 function MinesweeperBoardWidget:onCellTap(ges)
     if not self.paint_rect then return end
     local r, c = self:_cellAt(ges.pos.x, ges.pos.y)
-    if r and self.onCellTap then self.onCellTap(r, c) end
+    if r and self.cellTapCallback then self.cellTapCallback(r, c) end
     return true
 end
 
 function MinesweeperBoardWidget:onCellHold(ges)
     if not self.paint_rect then return end
     local r, c = self:_cellAt(ges.pos.x, ges.pos.y)
-    if r and self.onCellHold then self.onCellHold(r, c) end
+    if r and self.cellHoldCallback then self.cellHoldCallback(r, c) end
     return true
 end
 

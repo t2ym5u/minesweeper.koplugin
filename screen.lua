@@ -7,12 +7,14 @@ local function lrequire(name)
     return package.loaded[key]
 end
 
+local ButtonDialog    = require("ui/widget/buttondialog")
 local ButtonTable     = require("ui/widget/buttontable")
 local Device          = require("device")
 local FrameContainer  = require("ui/widget/container/framecontainer")
 local HorizontalGroup = require("ui/widget/horizontalgroup")
 local HorizontalSpan  = require("ui/widget/horizontalspan")
 local Size            = require("ui/size")
+local TitleBar        = require("ui/widget/titlebar")
 local UIManager       = require("ui/uimanager")
 local VerticalGroup   = require("ui/widget/verticalgroup")
 local VerticalSpan    = require("ui/widget/verticalspan")
@@ -82,53 +84,41 @@ end
 
 function MinesweeperScreen:buildLayout()
     local sw           = DeviceScreen:getWidth()
-    local sh = DeviceScreen:getHeight()
+    local sh           = DeviceScreen:getHeight()
     local is_landscape = self:isLandscape()
 
-    -- Top bar
-    local top_button_width = is_landscape
-        and math.max(math.floor(sw * 0.38), 100)
-        or  math.floor(sw * 0.9)
-
-    local top_buttons = ButtonTable:new{
-        shrink_unneeded_width = true,
-        width   = top_button_width,
-        buttons = {{
-            { text = _("New"),      callback = function() self:onNewGame() end },
-            { id = "preset_button", text = self:getPresetButtonText(),
-              callback = function() self:openPresetMenu() end },
-            { id = "flag_button",   text = self:getFlagButtonText(),
-              callback = function() self:toggleFlagMode() end },
-            self:makeRulesButtonConfig(GAME_RULES_EN, GAME_RULES_FR),
-            self:makeCloseButtonConfig(),
-        }},
+    -- Title bar (full width, pinned to top)
+    local title_bar = TitleBar:new{
+        width                  = sw,
+        title                  = _("Minesweeper"),
+        left_icon              = "appbar.menu",
+        left_icon_tap_callback = function() self:openOptionsMenu() end,
+        close_callback         = function() self:closeScreen() end,
+        with_bottom_line       = true,
     }
-    self.preset_button = top_buttons:getButtonById("preset_button")
-    self.flag_button   = top_buttons:getButtonById("flag_button")
+    local tb_h = title_bar:getSize().h
 
-    -- Board widget
-    local margin       = Size.margin.default
-    local padding      = Size.padding.large
-    local frame_extra  = (padding + margin) * 2
+    -- Board sizing
+    local margin      = Size.margin.default
+    local padding     = Size.padding.large
+    local frame_extra = (padding + margin) * 2
+    local btn_h       = Size.item.height_default + 2 * Size.padding.buttontable
 
     local board_max_w, board_max_h
     if is_landscape then
         board_max_w = math.floor(sw * 0.55)
-        board_max_h = sh - frame_extra - 20
+        board_max_h = sh - tb_h - frame_extra - 20
     else
-        local top_h    = top_button_width > 0 and 60 or 0
-        local bottom_h = 60
-        local status_h = 30
         board_max_w = sw - frame_extra
-        board_max_h = sh - top_h - bottom_h - status_h - frame_extra * 2 - 40
+        board_max_h = sh - tb_h - btn_h - 30 - frame_extra * 2 - 40
     end
     board_max_w = math.max(board_max_w, 80)
     board_max_h = math.max(board_max_h, 80)
 
     self.board_widget = MinesweeperBoardWidget:new{
-        board      = self.board,
-        max_width  = board_max_w,
-        max_height = board_max_h,
+        board            = self.board,
+        max_width        = board_max_w,
+        max_height       = board_max_h,
         cellTapCallback  = function(r, c) self:onCellTap(r, c) end,
         cellHoldCallback = function(r, c) self:onCellHold(r, c) end,
     }
@@ -139,30 +129,46 @@ function MinesweeperScreen:buildLayout()
         self.board_widget,
     }
 
-    -- Bottom bar
-    local bottom_buttons = ButtonTable:new{
+    -- Footer: game-specific actions
+    local btn_w = is_landscape
+        and math.max(math.floor(sw * 0.38), 100)
+        or  math.floor(sw * 0.9)
+
+    local footer = ButtonTable:new{
         shrink_unneeded_width = true,
-        width   = top_button_width,
+        width   = btn_w,
         buttons = {{
-            { text = _("Check"),   callback = function() self:onCheck() end },
+            { id = "flag_button", text = self:getFlagButtonText(),
+              callback = function() self:toggleFlagMode() end },
+            { text = _("Check"), callback = function() self:onCheck() end },
         }},
     }
+    self.flag_button = footer:getButtonById("flag_button")
 
     if is_landscape then
+        local avail_h = sh - tb_h
         local right_panel = VerticalGroup:new{
             align = "center",
-            top_buttons,
-            VerticalSpan:new{ width = Size.span.vertical_large },
             self.status_text,
             VerticalSpan:new{ width = Size.span.vertical_large },
-            bottom_buttons,
+            footer,
         }
-        self.layout = HorizontalGroup:new{
+        local game_row = HorizontalGroup:new{
             align  = "center",
             board_frame,
             HorizontalSpan:new{ width = Size.span.horizontal_default },
             right_panel,
         }
+        local game_h   = game_row:getSize().h
+        local top_span = math.max(0, math.floor((avail_h - game_h) / 2))
+        local bot_span = math.max(0, avail_h - top_span - game_h)
+        self.layout = VerticalGroup:new{
+            title_bar,
+            VerticalSpan:new{ width = top_span },
+            game_row,
+            VerticalSpan:new{ width = bot_span },
+        }
+        self[1] = self.layout
     else
         local content = VerticalGroup:new{
             align = "center",
@@ -170,10 +176,36 @@ function MinesweeperScreen:buildLayout()
             VerticalSpan:new{ width = Size.span.vertical_large },
             self.status_text,
         }
-        self:buildPortraitLayout(top_buttons, content, bottom_buttons)
+        self:buildPortraitLayout(title_bar, content, footer)
     end
-    self[1] = self.layout
     self:updateStatus()
+end
+
+-- ---------------------------------------------------------------------------
+-- Options menu
+-- ---------------------------------------------------------------------------
+
+function MinesweeperScreen:openOptionsMenu()
+    local dlg
+    dlg = ButtonDialog:new{
+        title = _("Minesweeper"),
+        buttons = {
+            {{ text = _("New game"), callback = function()
+                UIManager:close(dlg)
+                self:onNewGame()
+            end }},
+            {{ text = T(_("Preset: %1"), self:getPresetButtonText()),
+               callback = function()
+                UIManager:close(dlg)
+                self:openPresetMenu()
+            end }},
+            {{ text = _("Rules"), callback = function()
+                UIManager:close(dlg)
+                self:showRules(_.lang() == "fr" and GAME_RULES_FR or GAME_RULES_EN)
+            end }},
+        },
+    }
+    UIManager:show(dlg)
 end
 
 -- ---------------------------------------------------------------------------
@@ -263,7 +295,7 @@ function MinesweeperScreen:toggleFlagMode()
 end
 
 -- ---------------------------------------------------------------------------
--- Menus
+-- Preset menu
 -- ---------------------------------------------------------------------------
 
 function MinesweeperScreen:openPresetMenu()
@@ -284,9 +316,6 @@ function MinesweeperScreen:openPresetMenu()
         parent    = self,
         on_select = function(id)
             self.plugin:saveSetting("preset", id)
-            if self.preset_button then
-                self.preset_button:setText(self:getPresetButtonText(), self.preset_button.width)
-            end
             self:onNewGame()
         end,
     }

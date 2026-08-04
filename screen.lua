@@ -145,6 +145,8 @@ function MinesweeperScreen:buildLayout()
     }
     self.flag_button = footer:getButtonById("flag_button")
 
+    self.status_text:setMaxWidth(is_landscape and btn_w or (self.board_widget.w + frame_extra))
+
     if is_landscape then
         local avail_h = sh - tb_h
         local right_panel = VerticalGroup:new{

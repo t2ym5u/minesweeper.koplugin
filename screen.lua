@@ -141,6 +141,7 @@ function MinesweeperScreen:buildLayout()
             { id = "flag_button", text = self:getFlagButtonText(),
               callback = function() self:toggleFlagMode() end },
             { text = _("Check"), callback = function() self:onCheck() end },
+            { text = _("Hint"), callback = function() self:onHint() end },
         }},
     }
     self.flag_button = footer:getButtonById("flag_button")

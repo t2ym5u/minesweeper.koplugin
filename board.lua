@@ -9,6 +9,7 @@ end
 
 local grid_utils = lrequire("common/grid_utils")
 local Timer      = lrequire("common/timer")
+local Hint       = require("hint")
 
 local emptyGrid     = grid_utils.emptyGrid
 local emptyBoolGrid = grid_utils.emptyBoolGrid
@@ -304,6 +305,40 @@ MinesweeperBoard.STATE_HIDDEN   = STATE_HIDDEN
 MinesweeperBoard.STATE_REVEALED = STATE_REVEALED
 MinesweeperBoard.STATE_FLAGGED  = STATE_FLAGGED
 MinesweeperBoard.PRESETS        = PRESETS
+-- The mines are not placed until the first cell is opened, so before that
+-- there is no solution to reason from and no hint to give -- the board would
+-- otherwise look entirely mine-free and the hint would "prove" any cell safe.
+-- Once started: an unopened safe cell is offered to be opened, an unopened
+-- mine to be flagged, and a flag on a safe cell is reported as the mistake it
+-- is. Uncovering is done through reveal(), so its flood fill still runs.
+Hint.install(MinesweeperBoard, {
+    getUser     = function(b, r, c) return b.state[r][c] end,
+    getSolution = function(b, r, c)
+        return b.mines[r][c] and STATE_FLAGGED or STATE_REVEALED
+    end,
+    isEmpty     = function(v) return v == STATE_HIDDEN end,
+    equals      = function(u, s) return (u == STATE_FLAGGED) == (s == STATE_FLAGGED) end,
+    setCell     = function(b, r, c, v)
+        if v == STATE_FLAGGED then
+            b:toggleFlag(r, c)
+        else
+            b:reveal(r, c)
+        end
+        return true
+    end,
+    clearCell   = function(b, r, c)
+        if b.state[r][c] == STATE_FLAGGED then b:toggleFlag(r, c) end
+        return true
+    end,
+})
+
+-- Wrap findHint so it stays silent until the mines exist.
+local minesweeperFindHint = MinesweeperBoard.findHint
+function MinesweeperBoard:findHint()
+    if not self.started or self.game_over or self.win then return nil, "stuck" end
+    return minesweeperFindHint(self)
+end
+
 MinesweeperBoard.PRESET_ORDER   = PRESET_ORDER
 
 return MinesweeperBoard

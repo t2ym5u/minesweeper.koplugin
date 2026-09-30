@@ -20,6 +20,7 @@ and clear the board.
 ## Features
 
 - **Three presets** — Beginner (9×9, 10 mines), Intermediate (16×16, 40 mines), Expert (30×16, 99 mines)
+- **Hint** — two taps: the first says which cell is about to give, the second acts on it
 - **Custom grid** — set rows, columns and mine count freely
 - **Safe first tap** — the first cell tapped is always safe (mines placed afterwards)
 - **Auto-expand** — tapping a 0-cell reveals all adjacent safe cells recursively

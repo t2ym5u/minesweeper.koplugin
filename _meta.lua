@@ -3,5 +3,5 @@ local _ = require("gettext")
 return {
     fullname    = _("Minesweeper"),
     description = _("Classic mine-sweeping game. Reveal all safe cells without triggering a mine."),
-    version     = "1.2.1",
+    version     = "1.2.2",
 }

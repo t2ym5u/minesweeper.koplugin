@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2026-10-30
+
+### Added
+- "New game" once the game is won or lost: the action bar shows it in place
+  of Flag, Check and Hint, so the next game no longer needs the menu.
+- The rules now explain the gestures: tap to uncover, long-press (or Flag
+  mode) to flag, tap a satisfied number to uncover its other neighbours.
+
+### Changed
+- Redesigned play screen, in line with the other games: the standard title
+  bar and menu, a full-width action bar, a larger board that fills the
+  available room, and one frame around it. The status line reads "size ·
+  difficulty · Mines: n · Time: t" and wraps in landscape instead of being
+  cut off; flag mode is shown on its button only.
+- Title-bar menu in the same order as every other game: New game,
+  "Difficulty: Beginner" (was "Preset: Beginner" in a separate pop-up),
+  Rules.
+- New README screenshot.
+
+### Fixed
+- The difficulty names (Beginner, Intermediate, Expert) were never
+  translated.
+- A flagged cell was drawn like an uncovered blank; it now keeps the covered
+  shade under its flag.
+- Numbers and flags overflowed the small cells of the larger boards on
+  high-DPI screens. They are now fitted to the cell.
+- Using Hint wiped the saved game: the board was saved as nothing.
+
 ## [1.2.2] - 2026-10-07
 
 ### Fixed

@@ -75,11 +75,27 @@ function MinesweeperBoardWidget:init()
 
     self.dimen  = Geom:new{ w = self.w, h = self.h }
 
-    local face_sz = math.max(6, math.floor(cell * 0.55))
-    self.number_face = Font:getFace("smallinfofont", face_sz)
-
-    local flag_sz = math.max(5, math.floor(cell * 0.45))
-    self.flag_face = Font:getFace("smallinfofont", flag_sz)
+    -- Largest faces whose ink fits the cell. Measured unbounded (with a
+    -- width limit sizeUtf8Text truncates, so a width test against it can
+    -- never fail); ink height is y_top + y_bottom. A size scaled off `cell`
+    -- was scaled a second time by DPI in Font:getFace() and overflowed the
+    -- small cells of the larger presets.
+    local function fitFace(sample, max_w, max_h)
+        local lo, hi, best = 5, math.max(5, cell), 5
+        while lo <= hi do
+            local mid = math.floor((lo + hi) / 2)
+            local m   = RenderText:sizeUtf8Text(0, Device.screen:getWidth(),
+                Font:getFace("smallinfofont", mid), sample, true, false)
+            if m.x <= max_w and (m.y_top + m.y_bottom) <= max_h then
+                best, lo = mid, mid + 1
+            else
+                hi = mid - 1
+            end
+        end
+        return Font:getFace("smallinfofont", best)
+    end
+    self.number_face = fitFace("8", cell * 0.7, cell * 0.55)
+    self.flag_face   = fitFace("F", cell * 0.7, cell * 0.55)
 
     self.paint_rect = nil
 
@@ -148,7 +164,9 @@ function MinesweeperBoardWidget:paintTo(bb, x, y)
             local cy = y + (r - 1) * cell
             local st = board.state[r][c]
             local bg
-            if st == STATE_HIDDEN then
+            -- A flag sits on a still-covered cell: keep the covered shade,
+            -- or a flagged cell reads as an uncovered blank.
+            if st == STATE_HIDDEN or st == STATE_FLAGGED then
                 bg = C_HIDDEN
             elseif st == STATE_REVEALED and board.mines[r][c] then
                 bg = C_MINE_BG

@@ -7,14 +7,10 @@ local function lrequire(name)
     return package.loaded[key]
 end
 
-local ButtonDialog    = require("ui/widget/buttondialog")
-local ButtonTable     = require("ui/widget/buttontable")
-local Device          = require("device")
 local FrameContainer  = require("ui/widget/container/framecontainer")
 local HorizontalGroup = require("ui/widget/horizontalgroup")
 local HorizontalSpan  = require("ui/widget/horizontalspan")
 local Size            = require("ui/size")
-local TitleBar        = require("ui/widget/titlebar")
 local UIManager       = require("ui/uimanager")
 local VerticalGroup   = require("ui/widget/verticalgroup")
 local VerticalSpan    = require("ui/widget/verticalspan")
@@ -26,7 +22,6 @@ local MenuHelper          = require("menu_helper")
 local MinesweeperBoard    = lrequire("board")
 local MinesweeperBoardWidget = lrequire("board_widget")
 
-local DeviceScreen = Device.screen
 
 -- ---------------------------------------------------------------------------
 -- MinesweeperScreen
@@ -39,7 +34,8 @@ Uncover all safe cells without detonating a mine.
 
 Each uncovered cell shows the count of mines among its up-to-8 neighbouring cells.
 A cell showing 0 is safe and automatically expands to reveal its neighbours.
-Right-tap (or use Flag mode) to flag a suspected mine.
+Tap a cell to uncover it. Long-press a cell (or tap it with Flag mode on) to flag a suspected mine; do it again to remove the flag.
+Tap an uncovered number that has as many flags around it as its value to uncover its other neighbours at once.
 The first tap is always safe — mines are placed after it.
 
 Win by uncovering every non-mine cell.
@@ -52,7 +48,8 @@ Découvrez toutes les cases sûres sans faire exploser une mine.
 
 Chaque case découverte affiche le nombre de mines parmi ses 8 cases voisines.
 Une case affichant 0 est sûre et révèle automatiquement ses voisines.
-Appui long (ou mode Drapeau) pour marquer une mine suspectée.
+Appuyez sur une case pour la découvrir. Appui long sur une case (ou appui en mode Drapeau) pour marquer une mine suspectée ; recommencez pour retirer le drapeau.
+Appuyez sur un chiffre découvert entouré d'autant de drapeaux que sa valeur pour découvrir d'un coup ses autres voisines.
 Le premier appui est toujours sûr — les mines sont placées après.
 
 Gagnez en découvrant toutes les cases sans mine.
@@ -83,132 +80,64 @@ end
 -- ---------------------------------------------------------------------------
 
 function MinesweeperScreen:buildLayout()
-    local sw           = DeviceScreen:getWidth()
-    local sh           = DeviceScreen:getHeight()
     local is_landscape = self:isLandscape()
 
     -- Title bar (full width, pinned to top)
-    local title_bar = TitleBar:new{
-        width                  = sw,
-        title                  = _("Minesweeper"),
-        left_icon              = "appbar.menu",
-        left_icon_tap_callback = function() self:openOptionsMenu() end,
-        close_callback         = function() self:closeScreen() end,
-        with_bottom_line       = true,
+    local title_bar = self:buildTitleBar(_("Minesweeper"), function()
+        return {
+            { text = _("New game"), callback = function() self:onNewGame() end },
+            { text = T(_("Difficulty: %1"), self:getPresetLabel()),
+              callback = function() self:openPresetMenu() end },
+            self:makeRulesButtonConfig(GAME_RULES_EN, GAME_RULES_FR),
+        }
+    end)
+
+    -- Footer: game-specific actions
+    self.status_text:setMaxWidth(self:getControlsWidth())
+    local action_bar = self:buildActionBar({
+        { id = "flag_button", text = self:getFlagButtonText(),
+          callback = function() self:toggleFlagMode() end },
+        { text = _("Check"), callback = function() self:onCheck() end },
+        { text = _("Hint"), callback = function() self:onHint() end },
+    })
+    self.flag_button = action_bar:getButtonById("flag_button")
+    local controls = VerticalGroup:new{
+        align = "center",
+        self.status_text,
+        VerticalSpan:new{ width = Size.span.vertical_large },
+        action_bar,
     }
-    local tb_h = title_bar:getSize().h
 
-    -- Board sizing
-    local margin      = Size.margin.default
-    local padding     = Size.padding.large
-    local frame_extra = (padding + margin) * 2
-    local btn_h       = Size.item.height_default + 2 * Size.padding.buttontable
-
-    local board_max_w, board_max_h
-    if is_landscape then
-        board_max_w = math.floor(sw * 0.55)
-        board_max_h = sh - tb_h - frame_extra - 20
-    else
-        board_max_w = sw - frame_extra
-        board_max_h = sh - tb_h - btn_h - 30 - frame_extra * 2 - 40
-    end
-    board_max_w = math.max(board_max_w, 80)
-    board_max_h = math.max(board_max_h, 80)
-
+    -- The widget draws its own thick outer border, so the frame only pads.
+    local frame_pad = Size.padding.large
+    local budget_w, budget_h = self:getBoardBudget(title_bar, controls)
     self.board_widget = MinesweeperBoardWidget:new{
         board            = self.board,
-        max_width        = board_max_w,
-        max_height       = board_max_h,
+        max_width        = math.max(budget_w - 2 * frame_pad, 80),
+        max_height       = math.max(budget_h - 2 * frame_pad, 80),
         cellTapCallback  = function(r, c) self:onCellTap(r, c) end,
         cellHoldCallback = function(r, c) self:onCellHold(r, c) end,
     }
-
     local board_frame = FrameContainer:new{
-        padding = padding,
-        margin  = margin,
+        padding    = frame_pad,
+        margin     = 0,
+        bordersize = 0,
         self.board_widget,
     }
 
-    -- Footer: game-specific actions
-    local btn_w = is_landscape
-        and math.max(math.floor(sw * 0.38), 100)
-        or  math.floor(sw * 0.9)
-
-    local footer = ButtonTable:new{
-        shrink_unneeded_width = true,
-        width   = btn_w,
-        buttons = {{
-            { id = "flag_button", text = self:getFlagButtonText(),
-              callback = function() self:toggleFlagMode() end },
-            { text = _("Check"), callback = function() self:onCheck() end },
-            { text = _("Hint"), callback = function() self:onHint() end },
-        }},
-    }
-    self.flag_button = footer:getButtonById("flag_button")
-
-    self.status_text:setMaxWidth(is_landscape and btn_w or (self.board_widget.w + frame_extra))
-
     if is_landscape then
-        local avail_h = sh - tb_h
-        local right_panel = VerticalGroup:new{
+        local content = HorizontalGroup:new{
             align = "center",
-            self.status_text,
-            VerticalSpan:new{ width = Size.span.vertical_large },
-            footer,
-        }
-        local game_row = HorizontalGroup:new{
-            align  = "center",
             board_frame,
-            HorizontalSpan:new{ width = Size.span.horizontal_default },
-            right_panel,
+            HorizontalSpan:new{ width = self:getGutter() },
+            controls,
         }
-        local game_h   = game_row:getSize().h
-        local top_span = math.max(0, math.floor((avail_h - game_h) / 2))
-        local bot_span = math.max(0, avail_h - top_span - game_h)
-        self.layout = VerticalGroup:new{
-            title_bar,
-            VerticalSpan:new{ width = top_span },
-            game_row,
-            VerticalSpan:new{ width = bot_span },
-        }
-        self[1] = self.layout
+        self:buildLandscapeLayout(title_bar, content)
     else
-        local content = VerticalGroup:new{
-            align = "center",
-            board_frame,
-            VerticalSpan:new{ width = Size.span.vertical_large },
-            self.status_text,
-        }
-        self:buildPortraitLayout(title_bar, content, footer)
+        self:buildPortraitLayout(title_bar, board_frame,
+            VerticalGroup:new{ align = "center", controls, VerticalSpan:new{ width = self:getGutter() } })
     end
     self:updateStatus()
-end
-
--- ---------------------------------------------------------------------------
--- Options menu
--- ---------------------------------------------------------------------------
-
-function MinesweeperScreen:openOptionsMenu()
-    local dlg
-    dlg = ButtonDialog:new{
-        title = _("Minesweeper"),
-        buttons = {
-            {{ text = _("New game"), callback = function()
-                UIManager:close(dlg)
-                self:onNewGame()
-            end }},
-            {{ text = T(_("Preset: %1"), self:getPresetButtonText()),
-               callback = function()
-                UIManager:close(dlg)
-                self:openPresetMenu()
-            end }},
-            {{ text = _("Rules"), callback = function()
-                UIManager:close(dlg)
-                self:showRules(_.lang() == "fr" and GAME_RULES_FR or GAME_RULES_EN)
-            end }},
-        },
-    }
-    UIManager:show(dlg)
 end
 
 -- ---------------------------------------------------------------------------
@@ -246,6 +175,7 @@ function MinesweeperScreen:_doReveal(r, c)
         self.board_widget:refresh()
         self:updateStatus()
     end
+    self:refreshActionBar()
     self.plugin:saveState(self.board:serialize())
 end
 
@@ -267,6 +197,16 @@ function MinesweeperScreen:onNewGame()
     self.plugin:saveState(self.board:serialize())
     self:buildLayout()
     UIManager:setDirty(self, function() return "ui", self.dimen end)
+end
+
+function MinesweeperScreen:isRoundOver()
+    return (self.board.win or self.board.game_over) and true or false
+end
+
+-- A second Hint tap reveals a cell, which can be the last safe one.
+function MinesweeperScreen:onHint()
+    ScreenBase.onHint(self)
+    self:refreshActionBar()
 end
 
 function MinesweeperScreen:onCheck()
@@ -308,12 +248,11 @@ function MinesweeperScreen:openPresetMenu()
         presets[#presets + 1] = {
             id   = id,
             text = string.format("%s (%d\xC3\x97%d, %d)",
-                id:sub(1,1):upper() .. id:sub(2),
-                cfg.rows, cfg.cols, cfg.mines),
+                self:getPresetLabel(id), cfg.cols, cfg.rows, cfg.mines),
         }
     end
     MenuHelper.openSizeMenu{
-        title     = _("Select preset"),
+        title     = _("Difficulty"),
         sizes     = presets,
         current   = self.plugin:getSetting("preset", "beginner"),
         parent    = self,
@@ -337,10 +276,12 @@ function MinesweeperScreen:updateStatus(msg)
     elseif self.board.win then
         status = _("Congratulations! You cleared the board!")
     else
-        local mines_left = self.board:getRemainingMines()
-        local time_str   = self.board.timer:format()
-        local flag_str   = self.flag_mode and _(" \xC2\xB7 Flag ON") or ""
-        status = T(_("Mines: %1 \xC2\xB7 Time: %2%3"), mines_left, time_str, flag_str)
+        -- Flag mode is shown on its own button, so it isn't repeated here.
+        local b = self.board
+        status = self:joinStatus(T("%1\xC3\x97%2", b.cols, b.rows),
+            self:getPresetLabel(),
+            T(_("Mines: %1"), b:getRemainingMines()),
+            T(_("Time: %1"), b.timer:format()))
     end
     ScreenBase.updateStatus(self, status)
 end
@@ -349,9 +290,15 @@ end
 -- Button text helpers
 -- ---------------------------------------------------------------------------
 
-function MinesweeperScreen:getPresetButtonText()
-    local preset = self.plugin:getSetting("preset", "beginner")
-    return preset:sub(1,1):upper() .. preset:sub(2)
+local PRESET_LABELS = {
+    beginner     = _("Beginner"),
+    intermediate = _("Intermediate"),
+    expert       = _("Expert"),
+}
+
+function MinesweeperScreen:getPresetLabel(preset)
+    preset = preset or self.plugin:getSetting("preset", "beginner")
+    return PRESET_LABELS[preset] or (preset:sub(1,1):upper() .. preset:sub(2))
 end
 
 function MinesweeperScreen:getFlagButtonText()

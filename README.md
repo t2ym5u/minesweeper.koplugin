@@ -37,7 +37,7 @@ and clear the board.
 | Flag / unflag a mine | Tap it (in flag mode) or long-press |
 | Toggle reveal / flag mode | Tap the **Flag** button |
 | New game | Tap **New game** |
-| Change preset | Tap **Preset** |
+| Change difficulty | Tap **Difficulty** |
 | Show rules | Tap **Rules** |
 
 ## Why e-ink friendly?

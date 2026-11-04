@@ -11,5 +11,5 @@ return {
     ["Game over."]                         = { fr = "Partie terminée.", es = "Fin de la partida.", de = "Spiel vorbei." },
     ["BOOM! Game over."]                   = { fr = "BOOM ! Partie terminée.", es = "¡BOOM! Fin de la partida.", de = "BOOM! Spiel vorbei." },
     ["Classic mine-sweeping game. Reveal all safe cells without triggering a mine."] = { fr = "Jeu de démineur classique. Révélez toutes les cases sûres sans déclencher de mine.", es = "Juego clásico de buscaminas. Revela todas las casillas seguras sin activar una mina.", de = "Klassisches Minensuchspiel. Decke alle sicheren Felder auf, ohne eine Mine auszulösen." },
-    ["Minesweeper"] = { fr = "Minesweeper", es = "Minesweeper", de = "Minesweeper" },
+    ["Minesweeper"] = { fr = "Démineur", es = "Buscaminas", de = "Minesweeper" },
 }

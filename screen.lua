@@ -37,6 +37,7 @@ A cell showing 0 is safe and automatically expands to reveal its neighbours.
 Tap a cell to uncover it. Long-press a cell (or tap it with Flag mode on) to flag a suspected mine; do it again to remove the flag.
 Tap an uncovered number that has as many flags around it as its value to uncover its other neighbours at once.
 The first tap is always safe — mines are placed after it.
+No guessing is ever needed: from the first tap, the numbers and the mine counter are always enough to find the next safe cell or mine.
 
 Win by uncovering every non-mine cell.
 ]])
@@ -51,6 +52,7 @@ Une case affichant 0 est sûre et révèle automatiquement ses voisines.
 Appuyez sur une case pour la découvrir. Appui long sur une case (ou appui en mode Drapeau) pour marquer une mine suspectée ; recommencez pour retirer le drapeau.
 Appuyez sur un chiffre découvert entouré d'autant de drapeaux que sa valeur pour découvrir d'un coup ses autres voisines.
 Le premier appui est toujours sûr — les mines sont placées après.
+Vous n'avez jamais besoin de deviner : dès le premier appui, les chiffres et le compteur de mines suffisent toujours à trouver la prochaine case sûre ou la prochaine mine.
 
 Gagnez en découvrant toutes les cases sans mine.
 ]]

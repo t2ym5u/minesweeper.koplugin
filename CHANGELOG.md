@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.0] - 2026-11-05
+
+### Changed
+- No game ever needs a guess any more. Mines are still placed after the
+  first tap (which, with its neighbours, stays mine-free), but now in a
+  layout that can be cleared by deduction alone: one number at a time, two
+  nearby numbers together, and the mine counter. Before, only 77% of
+  Beginner, 55% of Intermediate and 3% of Expert games could be cleared
+  without guessing; now all of them can, wherever the first tap is. The mine
+  counts are unchanged. The rules say so.
+
+### Fixed
+- Resuming a saved game no longer makes every cell a mine: the first tap
+  after reopening the game always exploded. Games saved by older versions
+  resume correctly too.
+- README: the Expert preset is 20×16 with 70 mines, and the list no longer
+  mentions a custom grid or best times the game does not have.
+
 ## [1.3.5] - 2026-11-04
 
 ### Fixed

@@ -69,37 +69,17 @@ function MinesweeperBoard:_reset()
     self.timer:reset()
 end
 
--- Place mines randomly, avoiding (safe_r, safe_c) and its 8-neighbours.
+-- Place the mines, avoiding (safe_r, safe_c) and its 8-neighbours, in a
+-- layout that can be cleared from that first tap by deduction alone: no
+-- guess is ever needed (see mine_gen.lua).
 function MinesweeperBoard:_placeMines(safe_r, safe_c)
     local rows, cols = self.rows, self.cols
-    local excluded = {}
-    for dr = -1, 1 do
-        for dc = -1, 1 do
-            local nr, nc = safe_r + dr, safe_c + dc
-            if nr >= 1 and nr <= rows and nc >= 1 and nc <= cols then
-                excluded[nr * 1000 + nc] = true
-            end
-        end
-    end
-
-    local candidates = {}
+    local MineGen = lrequire("mine_gen")
+    local layout = MineGen.generate(rows, cols, self.mine_count, safe_r, safe_c)
     for r = 1, rows do
         for c = 1, cols do
-            if not excluded[r * 1000 + c] then
-                candidates[#candidates + 1] = { r, c }
-            end
+            self.mines[r][c] = layout[(r - 1) * cols + c] and true or false
         end
-    end
-
-    -- Fisher-Yates partial shuffle
-    local placed = 0
-    for i = #candidates, math.max(1, #candidates - self.mine_count + 1), -1 do
-        local j = math.random(i)
-        candidates[i], candidates[j] = candidates[j], candidates[i]
-        local r, c = candidates[i][1], candidates[i][2]
-        self.mines[r][c] = true
-        placed = placed + 1
-        if placed >= self.mine_count then break end
     end
 
     -- Compute neighbour counts
@@ -259,7 +239,10 @@ end
 
 function MinesweeperBoard:serialize()
     local rows, cols = self.rows, self.cols
-    local mines_out  = copyGrid(self.mines, cols, rows)
+    local mines_out  = emptyBoolGrid(cols, rows)
+    for r = 1, rows do
+        for c = 1, cols do mines_out[r][c] = self.mines[r][c] == true end
+    end
     local counts_out = copyGrid(self.counts, cols, rows)
     local state_out  = copyGrid(self.state, cols, rows)
     return {
@@ -285,7 +268,16 @@ function MinesweeperBoard:load(data)
     self.cols        = cols
     self.mine_count  = data.mine_count or 10
     self.preset      = data.preset or "beginner"
-    self.mines       = copyGrid(data.mines  or {}, cols, rows)
+    -- Mines are `true`; anything else is no mine. Saves before 1.4.0 wrote
+    -- the mine-free cells as 0 (copyGrid's filler), which Lua reads as true.
+    self.mines       = emptyBoolGrid(cols, rows)
+    local src_mines  = type(data.mines) == "table" and data.mines or {}
+    for r = 1, rows do
+        local row = src_mines[r]
+        for c = 1, cols do
+            self.mines[r][c] = type(row) == "table" and row[c] == true
+        end
+    end
     self.counts      = copyGrid(data.counts or {}, cols, rows)
     self.state       = copyGrid(data.state  or {}, cols, rows)
     self.started     = data.started    or false

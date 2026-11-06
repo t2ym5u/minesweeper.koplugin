@@ -9,7 +9,7 @@ A Minesweeper plugin for [KOReader](https://github.com/koreader/koreader).
 
 ## Rules
 
-Reveal all safe cells without hitting a mine. Each revealed cell shows the count of mines in its 8 neighbours. Flag suspected mines. The first tap is always safe.
+Reveal all safe cells without hitting a mine. Each revealed cell shows the count of mines in its 8 neighbours. Flag suspected mines. The first tap is always safe, and no game ever needs a guess: from the first tap, the numbers and the mine counter always tell you the next safe cell or mine.
 
 ## Concept
 
@@ -19,14 +19,14 @@ and clear the board.
 
 ## Features
 
-- **Three presets** — Beginner (9×9, 10 mines), Intermediate (16×16, 40 mines), Expert (30×16, 99 mines)
+- **Three presets** — Beginner (9×9, 10 mines), Intermediate (16×16, 40 mines), Expert (20×16, 70 mines)
+- **No guessing** — every game can be cleared by deduction alone from the first tap
 - **Hint** — two taps: the first says which cell is about to give, the second acts on it
-- **Custom grid** — set rows, columns and mine count freely
-- **Safe first tap** — the first cell tapped is always safe (mines placed afterwards)
+- **Safe first tap** — the first cell tapped and its neighbours are always mine-free (mines placed afterwards)
 - **Auto-expand** — tapping a 0-cell reveals all adjacent safe cells recursively
 - **Flag mode** — toggle between reveal and flag actions
-- **Timer** — elapsed time displayed; best times stored per preset
-- **Check** — highlights incorrectly flagged cells
+- **Timer** — elapsed time displayed
+- **Check** — tells how many safe cells are still to uncover
 - **Auto-save** — in-progress game is restored on next launch
 
 ## Controls
